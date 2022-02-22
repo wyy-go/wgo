@@ -17,9 +17,10 @@ import (
 type GreeterServer interface {
 	SayHello(ctx context.Context, req *HelloRequest) (resp *HelloReply, err error)
 }
-type UnimplementedGreeterServer struct {}
+type UnimplementedGreeterServer struct{}
+
 func (*UnimplementedGreeterServer) SayHello(ctx context.Context, req *HelloRequest) (*HelloReply, error) {
-	return nil,errors.New("method SayHello not implemented") 
+	return nil, errors.New("method SayHello not implemented")
 }
 
 // GreeterHandler provides a NATS subscription handler that can serve a
@@ -33,9 +34,9 @@ type GreeterHandler struct {
 	encodings []string
 }
 
-func NewGreeterHandler(ctx context.Context, s GreeterServer) *GreeterHandler {
+func NewGreeterHandler(s GreeterServer) *GreeterHandler {
 	return &GreeterHandler{
-		ctx:    ctx,
+		ctx:    nil,
 		nc:     nil,
 		server: s,
 
@@ -58,6 +59,16 @@ func (h *GreeterHandler) SetEncodings(encodings []string) {
 
 func (h *GreeterHandler) SetNats(nc *nats.Conn) {
 	h.nc = nc
+}
+
+func (h *GreeterHandler) SetContext(ctx context.Context) {
+	if h.workers == nil {
+		h.ctx = ctx
+	} else {
+		nCtx, cancel := context.WithCancel(ctx)
+		h.workers.Context = nCtx
+		h.workers.ContextCancel = cancel
+	}
 }
 
 func (h *GreeterHandler) Subject() string {
@@ -96,11 +107,11 @@ func (h *GreeterHandler) Handler(msg *nats.Msg) {
 		if err := nrpc.Unmarshal(request.Encoding, msg.Data, &req); err != nil {
 			log.Printf("SayHelloHandler: SayHello request unmarshal failed: %v", err)
 			immediateError = &nrpc.Error{
-				Type: nrpc.Error_CLIENT,
+				Type:    nrpc.Error_CLIENT,
 				Message: "bad request received: " + err.Error(),
 			}
 		} else {
-			request.Handler = func(ctx context.Context)(proto.Message, error){
+			request.Handler = func(ctx context.Context) (proto.Message, error) {
 				innerResp, err := h.server.SayHello(ctx, &req)
 				if err != nil {
 					return nil, err
@@ -111,7 +122,7 @@ func (h *GreeterHandler) Handler(msg *nats.Msg) {
 	default:
 		log.Printf("GreeterHandler: unknown name %q", name)
 		immediateError = &nrpc.Error{
-			Type: nrpc.Error_CLIENT,
+			Type:    nrpc.Error_CLIENT,
 			Message: "unknown name: " + name,
 		}
 	}
@@ -136,20 +147,20 @@ func (h *GreeterHandler) Handler(msg *nats.Msg) {
 }
 
 type GreeterClient struct {
-	nc      nrpc.NatsConn
+	nc         nrpc.NatsConn
 	PkgSubject string
-	Subject string
-	Encoding string
-	Timeout time.Duration
+	Subject    string
+	Encoding   string
+	Timeout    time.Duration
 }
 
 func NewGreeterClient(nc nrpc.NatsConn) *GreeterClient {
 	return &GreeterClient{
-		nc:      nc,
+		nc:         nc,
 		PkgSubject: "helloworld",
-		Subject: "Greeter",
-		Encoding: "protobuf",
-		Timeout: 5 * time.Second,
+		Subject:    "Greeter",
+		Encoding:   "protobuf",
+		Timeout:    5 * time.Second,
 	}
 }
 
@@ -167,19 +178,19 @@ func (c *GreeterClient) SayHello(req HelloRequest) (resp HelloReply, err error) 
 }
 
 type Client struct {
-	nc      nrpc.NatsConn
+	nc              nrpc.NatsConn
 	defaultEncoding string
-	defaultTimeout time.Duration
-	pkgSubject string
-	Greeter *GreeterClient
+	defaultTimeout  time.Duration
+	pkgSubject      string
+	Greeter         *GreeterClient
 }
 
 func NewClient(nc nrpc.NatsConn) *Client {
 	c := Client{
-		nc: nc,
+		nc:              nc,
 		defaultEncoding: "protobuf",
-		defaultTimeout: 5*time.Second,
-		pkgSubject: "helloworld",
+		defaultTimeout:  5 * time.Second,
+		pkgSubject:      "helloworld",
 	}
 	c.Greeter = NewGreeterClient(nc)
 	return &c

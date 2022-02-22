@@ -3,17 +3,13 @@ package wgo
 import (
 	"fmt"
 	"github.com/nats-io/nats.go"
+	"github.com/wyy-go/wgo/middleware"
+	"github.com/wyy-go/wgo/nrpc"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
-
-type Handler interface {
-	Subject() string
-	Handler(msg *nats.Msg)
-	SetNats(nc *nats.Conn)
-}
 
 type App struct {
 	opts Options
@@ -32,17 +28,17 @@ func (a *App) GetNats() *nats.Conn {
 	return a.nc
 }
 
-func (a *App) RegisterHandler(h Handler) error {
-	sub, err := a.nc.Subscribe(h.Subject(), h.Handler)
+func (a *App) RegisterHandler(h nrpc.Handler) error {
 	h.SetNats(a.nc)
+	sub, err := a.nc.Subscribe(h.Subject(), middleware.Wrap(h, a.opts.middleware...))
 	a.sub = sub
 	return err
 }
 
 // RegisterHandlerForLB for a load-balanced set of servers
-func (a *App) RegisterHandlerForLB(h Handler, queue string) error {
-	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, h.Handler)
+func (a *App) RegisterHandlerForLB(h nrpc.Handler, queue string) error {
 	h.SetNats(a.nc)
+	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, middleware.Wrap(h, a.opts.middleware...))
 	a.sub = sub
 	return err
 }

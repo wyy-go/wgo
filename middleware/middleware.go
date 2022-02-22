@@ -2,10 +2,11 @@ package middleware
 
 import (
 	"context"
+	"github.com/nats-io/nats.go"
 )
 
 // Handler defines the handler invoked by Middleware.
-type Handler func(ctx context.Context, req interface{}) (interface{}, error)
+type Handler func(ctx context.Context, msg *nats.Msg) (interface{}, error)
 
 // Middleware is HTTP/gRPC transport middleware.
 type Middleware func(Handler) Handler

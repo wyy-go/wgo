@@ -152,9 +152,9 @@ type {{.GetName}}Handler struct {
 	encodings []string
 }
 
-func New{{.GetName}}Handler(ctx context.Context, s {{.GetName}}Server) *{{.GetName}}Handler {
+func New{{.GetName}}Handler(s {{.GetName}}Server) *{{.GetName}}Handler {
 	return &{{.GetName}}Handler{
-		ctx:    ctx,
+		ctx:    nil,
 		nc:     nil,
 		server: s,
 
@@ -177,6 +177,16 @@ func (h *{{.GetName}}Handler) SetEncodings(encodings []string) {
 
 func (h *{{.GetName}}Handler) SetNats(nc *nats.Conn) {
 	h.nc = nc
+}
+
+func (h *{{.GetName}}Handler) SetContext(ctx context.Context) {
+	if h.workers == nil {
+		h.ctx = ctx
+	} else {
+		nCtx, cancel := context.WithCancel(ctx)
+		h.workers.Context = nCtx
+		h.workers.ContextCancel = cancel
+	}
 }
 
 func (h *{{.GetName}}Handler) Subject() string {

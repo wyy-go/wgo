@@ -3,6 +3,7 @@ package wgo
 import (
 	"context"
 	"github.com/nats-io/nats.go"
+	"github.com/wyy-go/wgo/middleware"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Options struct {
 	trace       bool
 	natsUrl     string
 	natsTimeOut time.Duration
+	middleware  []middleware.Middleware
 	context     context.Context
 }
 
@@ -88,8 +90,8 @@ func NatsTimeOut(d time.Duration) Option {
 	}
 }
 
-//func Registry(r registry.Registry) Option {
-//	return func(o *Options) {
-//		o.Registry = r
-//	}
-//}
+func Middleware(m ...middleware.Middleware) Option {
+	return func(o *Options) {
+		o.middleware = append(o.middleware, m...)
+	}
+}

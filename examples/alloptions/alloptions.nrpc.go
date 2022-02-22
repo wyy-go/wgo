@@ -47,20 +47,20 @@ type SvcCustomSubjectHandler struct {
 	encodings []string
 }
 
-func NewSvcCustomSubjectHandler(ctx context.Context, nc nrpc.NatsConn, s SvcCustomSubjectServer) *SvcCustomSubjectHandler {
+func NewSvcCustomSubjectHandler(s SvcCustomSubjectServer) *SvcCustomSubjectHandler {
 	return &SvcCustomSubjectHandler{
-		ctx:    ctx,
-		nc:     nc,
+		ctx:    nil,
+		nc:     nil,
 		server: s,
 
 		encodings: []string{"protobuf"},
 	}
 }
 
-func NewSvcCustomSubjectConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s SvcCustomSubjectServer) *SvcCustomSubjectHandler {
+func NewSvcCustomSubjectConcurrentHandler(workers *nrpc.WorkerPool, s SvcCustomSubjectServer) *SvcCustomSubjectHandler {
 	return &SvcCustomSubjectHandler{
 		workers: workers,
-		nc:      nc,
+		nc:      nil,
 		server:  s,
 	}
 }
@@ -68,6 +68,20 @@ func NewSvcCustomSubjectConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.Nats
 // SetEncodings sets the output encodings when using a '*Publish' function
 func (h *SvcCustomSubjectHandler) SetEncodings(encodings []string) {
 	h.encodings = encodings
+}
+
+func (h *SvcCustomSubjectHandler) SetNats(nc *nats.Conn) {
+	h.nc = nc
+}
+
+func (h *SvcCustomSubjectHandler) SetContext(ctx context.Context) {
+	if h.workers == nil {
+		h.ctx = ctx
+	} else {
+		nCtx, cancel := context.WithCancel(ctx)
+		h.workers.Context = nCtx
+		h.workers.ContextCancel = cancel
+	}
 }
 
 func (h *SvcCustomSubjectHandler) Subject() string {
@@ -419,20 +433,20 @@ type SvcSubjectParamsHandler struct {
 	encodings []string
 }
 
-func NewSvcSubjectParamsHandler(ctx context.Context, nc nrpc.NatsConn, s SvcSubjectParamsServer) *SvcSubjectParamsHandler {
+func NewSvcSubjectParamsHandler(s SvcSubjectParamsServer) *SvcSubjectParamsHandler {
 	return &SvcSubjectParamsHandler{
-		ctx:    ctx,
-		nc:     nc,
+		ctx:    nil,
+		nc:     nil,
 		server: s,
 
 		encodings: []string{"protobuf"},
 	}
 }
 
-func NewSvcSubjectParamsConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s SvcSubjectParamsServer) *SvcSubjectParamsHandler {
+func NewSvcSubjectParamsConcurrentHandler(workers *nrpc.WorkerPool, s SvcSubjectParamsServer) *SvcSubjectParamsHandler {
 	return &SvcSubjectParamsHandler{
 		workers: workers,
-		nc:      nc,
+		nc:      nil,
 		server:  s,
 	}
 }
@@ -440,6 +454,20 @@ func NewSvcSubjectParamsConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.Nats
 // SetEncodings sets the output encodings when using a '*Publish' function
 func (h *SvcSubjectParamsHandler) SetEncodings(encodings []string) {
 	h.encodings = encodings
+}
+
+func (h *SvcSubjectParamsHandler) SetNats(nc *nats.Conn) {
+	h.nc = nc
+}
+
+func (h *SvcSubjectParamsHandler) SetContext(ctx context.Context) {
+	if h.workers == nil {
+		h.ctx = ctx
+	} else {
+		nCtx, cancel := context.WithCancel(ctx)
+		h.workers.Context = nCtx
+		h.workers.ContextCancel = cancel
+	}
 }
 
 func (h *SvcSubjectParamsHandler) Subject() string {
@@ -749,20 +777,20 @@ type NoRequestServiceHandler struct {
 	encodings []string
 }
 
-func NewNoRequestServiceHandler(ctx context.Context, nc nrpc.NatsConn, s NoRequestServiceServer) *NoRequestServiceHandler {
+func NewNoRequestServiceHandler(s NoRequestServiceServer) *NoRequestServiceHandler {
 	return &NoRequestServiceHandler{
-		ctx:    ctx,
-		nc:     nc,
+		ctx:    nil,
+		nc:     nil,
 		server: s,
 
 		encodings: []string{"protobuf"},
 	}
 }
 
-func NewNoRequestServiceConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s NoRequestServiceServer) *NoRequestServiceHandler {
+func NewNoRequestServiceConcurrentHandler(workers *nrpc.WorkerPool, s NoRequestServiceServer) *NoRequestServiceHandler {
 	return &NoRequestServiceHandler{
 		workers: workers,
-		nc:      nc,
+		nc:      nil,
 		server:  s,
 	}
 }
@@ -770,6 +798,20 @@ func NewNoRequestServiceConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.Nats
 // SetEncodings sets the output encodings when using a '*Publish' function
 func (h *NoRequestServiceHandler) SetEncodings(encodings []string) {
 	h.encodings = encodings
+}
+
+func (h *NoRequestServiceHandler) SetNats(nc *nats.Conn) {
+	h.nc = nc
+}
+
+func (h *NoRequestServiceHandler) SetContext(ctx context.Context) {
+	if h.workers == nil {
+		h.ctx = ctx
+	} else {
+		nCtx, cancel := context.WithCancel(ctx)
+		h.workers.Context = nCtx
+		h.workers.ContextCancel = cancel
+	}
 }
 
 func (h *NoRequestServiceHandler) Subject() string {

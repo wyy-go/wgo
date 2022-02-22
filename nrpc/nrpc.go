@@ -26,6 +26,13 @@ var ErrStreamInvalidMsgCount = errors.New("Stream reply received an incorrect nu
 //go:generate protoc -I. -I./third_party -I./third_party/gogoproto --gogo_out=Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:. nrpc.proto
 //go:generate mv nrpc/nrpc.pb.go nrpc/nrpcpb_test.go .
 
+type Handler interface {
+	Subject() string
+	Handler(msg *nats.Msg)
+	SetNats(nc *nats.Conn)
+	SetContext(ctx context.Context)
+}
+
 type NatsConn interface {
 	Publish(subj string, data []byte) error
 	PublishRequest(subj, reply string, data []byte) error
@@ -724,7 +731,7 @@ func (k *KeepStreamAlive) loop() {
 // WorkerPool is a pool of workers
 type WorkerPool struct {
 	Context       context.Context
-	contextCancel context.CancelFunc
+	ContextCancel context.CancelFunc
 
 	queue     chan *Request
 	schedule  chan *Request
@@ -738,15 +745,12 @@ type WorkerPool struct {
 
 // NewWorkerPool creates a pool of workers
 func NewWorkerPool(
-	ctx context.Context,
 	size uint,
 	maxPending uint,
 	maxPendingDuration time.Duration,
 ) *WorkerPool {
-	nCtx, cancel := context.WithCancel(ctx)
+
 	pool := WorkerPool{
-		Context:            nCtx,
-		contextCancel:      cancel,
 		queue:              make(chan *Request, maxPending),
 		schedule:           make(chan *Request),
 		maxPending:         maxPending,
@@ -887,7 +891,7 @@ func (pool *WorkerPool) Close(timeout time.Duration) {
 	}
 
 	// Now wait for the workers to stop and cancel the context if they don't
-	timer := time.AfterFunc(timeout, pool.contextCancel)
+	timer := time.AfterFunc(timeout, pool.ContextCancel)
 	pool.waitGroup.Wait()
 	timer.Stop()
 	close(pool.schedule)

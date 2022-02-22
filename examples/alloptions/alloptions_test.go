@@ -106,7 +106,9 @@ func TestAll(t *testing.T) {
 
 	t.Run("MultiProtocolPublish", func(t *testing.T) {
 		log.SetOutput(TestingLogWriter{t})
-		handler := NewSvcCustomSubjectHandler(context.Background(), c, BasicServerImpl{t, nil, nil})
+		handler := NewSvcCustomSubjectHandler(BasicServerImpl{t, nil, nil})
+		handler.SetContext(context.Background())
+		handler.SetNats(c)
 		handler.SetEncodings([]string{"protobuf", "json"})
 
 		c1 := NewSvcCustomSubjectClient(c, "default")
@@ -142,9 +144,13 @@ func TestAll(t *testing.T) {
 
 	t.Run("NoConcurrency", func(t *testing.T) {
 		log.SetOutput(TestingLogWriter{t})
-		handler1 := NewSvcCustomSubjectHandler(context.Background(), c, BasicServerImpl{t, nil, nil})
+		handler1 := NewSvcCustomSubjectHandler(BasicServerImpl{t, nil, nil})
+		handler1.SetNats(c)
+		handler1.SetContext(context.Background())
 		impl := BasicServerImpl{t, handler1, nil}
-		handler2 := NewSvcSubjectParamsHandler(context.Background(), c, &impl)
+		handler2 := NewSvcSubjectParamsHandler(&impl)
+		handler2.SetContext(context.Background())
+		handler2.SetNats(c)
 		impl.handler2 = handler2
 
 		if handler1.Subject() != "root.*.custom_subject.>" {
@@ -161,11 +167,14 @@ func TestAll(t *testing.T) {
 
 	t.Run("WithConcurrency", func(t *testing.T) {
 		log.SetOutput(TestingLogWriter{t})
-		pool := nrpc.NewWorkerPool(context.Background(), 2, 5, 4*time.Second)
+		pool := nrpc.NewWorkerPool(2, 5, 4*time.Second)
 
-		handler1 := NewSvcCustomSubjectConcurrentHandler(pool, c, BasicServerImpl{t, nil, nil})
+		handler1 := NewSvcCustomSubjectConcurrentHandler(pool, BasicServerImpl{t, nil, nil})
+		handler1.SetNats(c)
+		handler1.SetContext(context.Background())
 		impl := BasicServerImpl{t, handler1, nil}
-		handler2 := NewSvcSubjectParamsConcurrentHandler(pool, c, &impl)
+		handler2 := NewSvcSubjectParamsConcurrentHandler(pool, &impl)
+		handler2.SetNats(c)
 		impl.handler2 = handler2
 
 		if handler1.Subject() != "root.*.custom_subject.>" {
