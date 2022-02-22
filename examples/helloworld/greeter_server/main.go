@@ -29,11 +29,11 @@ func main() {
 	s := &server{}
 
 	// The NATS handler from the helloworld.nrpc.proto file.
-	h := helloworld.NewGreeterHandler(context.TODO(), app.GetNats(), s)
+	h := helloworld.NewGreeterHandler(context.TODO(), s)
 
 	// Start a NATS subscription using the handler. You can also use the
-	// QueueSubscribe() method for a load-balanced set of servers.
-	err := app.Subscribe(h.Subject(), h.Handler)
+	// RegisterHandlerForLB() method for a load-balanced set of servers.
+	err := app.RegisterHandler(h)
 	if err != nil {
 		log.Fatal(err)
 	}

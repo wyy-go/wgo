@@ -16,7 +16,6 @@ type Options struct {
 	natsUrl     string
 	natsTimeOut time.Duration
 	context     context.Context
-	//Registry   registry.Registry
 }
 
 type Option func(*Options)

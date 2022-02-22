@@ -9,6 +9,12 @@ import (
 	"syscall"
 )
 
+type Handler interface {
+	Subject() string
+	Handler(msg *nats.Msg)
+	SetNats(nc *nats.Conn)
+}
+
 type App struct {
 	opts Options
 
@@ -26,15 +32,17 @@ func (a *App) GetNats() *nats.Conn {
 	return a.nc
 }
 
-func (a *App) Subscribe(subj string, cb nats.MsgHandler) error {
-	sub, err := a.nc.Subscribe(subj, cb)
+func (a *App) RegisterHandler(h Handler) error {
+	sub, err := a.nc.Subscribe(h.Subject(), h.Handler)
+	h.SetNats(a.nc)
 	a.sub = sub
 	return err
 }
 
-// QueueSubscribe for a load-balanced set of servers
-func (a *App) QueueSubscribe(subj string, queue string, cb nats.MsgHandler) error {
-	sub, err := a.nc.QueueSubscribe(subj, queue, cb)
+// RegisterHandlerForLB for a load-balanced set of servers
+func (a *App) RegisterHandlerForLB(h Handler, queue string) error {
+	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, h.Handler)
+	h.SetNats(a.nc)
 	a.sub = sub
 	return err
 }

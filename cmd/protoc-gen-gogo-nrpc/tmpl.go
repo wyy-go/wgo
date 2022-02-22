@@ -152,20 +152,20 @@ type {{.GetName}}Handler struct {
 	encodings []string
 }
 
-func New{{.GetName}}Handler(ctx context.Context, nc nrpc.NatsConn, s {{.GetName}}Server) *{{.GetName}}Handler {
+func New{{.GetName}}Handler(ctx context.Context, s {{.GetName}}Server) *{{.GetName}}Handler {
 	return &{{.GetName}}Handler{
 		ctx:    ctx,
-		nc:     nc,
+		nc:     nil,
 		server: s,
 
 		encodings: []string{"protobuf"},
 	}
 }
 
-func New{{.GetName}}ConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s {{.GetName}}Server) *{{.GetName}}Handler {
+func New{{.GetName}}ConcurrentHandler(workers *nrpc.WorkerPool, s {{.GetName}}Server) *{{.GetName}}Handler {
 	return &{{.GetName}}Handler{
 		workers: workers,
-		nc:      nc,
+		nc:      nil,
 		server:  s,
 	}
 }
@@ -173,6 +173,10 @@ func New{{.GetName}}ConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn
 // SetEncodings sets the output encodings when using a '*Publish' function
 func (h *{{.GetName}}Handler) SetEncodings(encodings []string) {
 	h.encodings = encodings
+}
+
+func (h *{{.GetName}}Handler) SetNats(nc *nats.Conn) {
+	h.nc = nc
 }
 
 func (h *{{.GetName}}Handler) Subject() string {
