@@ -1,0 +1,22 @@
+service:
+  name: "wgo"
+  version: "0.0.1"
+  deploy_env: "dev"
+  verbose: false
+logger:
+  level: "debug"
+  filename: "log/app.log"
+  max_size: 100
+  max_backups: 10
+  max_age: 7
+  compress: true
+mysql:
+  data_source: "root:123456@tcp(127.0.0.1:3306)/wgo?parseTime=true&loc=Local"
+  max_idle: 10
+  max_open: 100
+redis:
+  addr: "127.0.0.1:6379"
+  password: "123456"
+  db: 5
+
+

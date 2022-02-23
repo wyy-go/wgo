@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"github.com/wyy-go/wgo"
+	appconfig "github.com/wyy-go/wgo/examples/helloworld/config"
+	"github.com/wyy-go/wgo/pkg/config"
+	"github.com/wyy-go/wgo/pkg/env"
 	"github.com/wyy-go/wgo/pkg/logger"
 	// This is the package containing the generated *.pb.go and *.nrpc.go
 	// files.
@@ -28,6 +31,17 @@ func (s *server) SayHello(ctx context.Context, req *helloworld.HelloRequest) (re
 func main() {
 	app := wgo.New(wgo.Middleware(m1.M1(), m2.M2()))
 
+	// deploy env
+	deployEnv := config.Get("service.deploy_env").String("")
+	env.SetDeploy(env.ToDeploy(deployEnv))
+	if env.GetDeploy() == env.DeployUnknown {
+		logger.Fatal("未设置发布模式")
+	}
+
+	appconfig.Load()
+	//	logger.Debug(appconfig.GetMysql())
+	//	logger.Debug(appconfig.GetRedis())
+	
 	// Our server implementation.
 	s := &server{}
 
