@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/wyy-go/wgo"
-	"log"
+	"github.com/wyy-go/wgo/pkg/logger"
 	// This is the package containing the generated *.pb.go and *.nrpc.go
 	// files.
 	"github.com/wyy-go/wgo/examples/helloworld/helloworld"
@@ -20,9 +19,9 @@ func main() {
 	// Contact the server and print out its response.
 	resp, err := cli.SayHello(helloworld.HelloRequest{Name: "world"})
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
-
+	
 	// print
-	fmt.Printf("Greeting: %s\n", resp.GetMessage())
+	logger.Debugf("Greeting: %s\n", resp.GetMessage())
 }

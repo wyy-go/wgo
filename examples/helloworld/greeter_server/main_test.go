@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -24,7 +23,7 @@ func TestBasic(t *testing.T) {
 	s := &server{}
 
 	// The NATS handler from the helloworld.nrpc.proto file.
-	h := helloworld.NewGreeterHandler(context.TODO(), nc, s)
+	h := helloworld.NewGreeterHandler(s)
 
 	// Start a NATS subscription using the handler. You can also use the
 	// QueueSubscribe() method for a load-balanced set of servers.

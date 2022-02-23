@@ -2,8 +2,13 @@ package wgo
 
 import (
 	"fmt"
+	"github.com/natefinch/lumberjack"
 	"github.com/nats-io/nats.go"
 	"github.com/wyy-go/wgo/nrpc"
+	"github.com/wyy-go/wgo/pkg/logger"
+	"github.com/wyy-go/wgo/pkg/logger/zap"
+	"github.com/wyy-go/wgo/pkg/uuid"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -36,8 +41,10 @@ func (a *App) RegisterHandler(h nrpc.H) error {
 }
 
 // RegisterHandlerForLB for a load-balanced set of servers
-func (a *App) RegisterHandlerForLB(h nrpc.H, queue string) error {
+func (a *App) RegisterHandlerForLB(h nrpc.H) error {
+	queue := uuid.New().String()
 	h.SetNats(a.nc)
+	h.SetMiddleware(a.opts.middleware)
 	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, h.Handler)
 	a.sub = sub
 	return err
@@ -67,12 +74,39 @@ func New(opts ...Option) *App {
 	app := &App{}
 	app.opts = options
 
+	// logger:
+	//  level: "debug"
+	//  filename: "log/app.log"
+	//  max_size: 100
+	//  max_backups: 10
+	//  max_age: 7
+	//  compress: true
+
+	// logger
+	w := &lumberjack.Logger{
+		Filename:   "log/app.log",
+		MaxSize:    100,
+		MaxBackups: 10,
+		MaxAge:     7,
+		Compress:   true,
+	}
+
+	lvl, err := logger.GetLevel("debug")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	l, err := zap.NewLogger(logger.WithLevel(lvl), logger.WithWriter([]io.Writer{os.Stderr, w}))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.DefaultLogger = l
+
 	// Connect to the NATS server.
 	nc, err := nats.Connect(app.opts.natsUrl, nats.Timeout(app.opts.natsTimeOut))
 	if err != nil {
 		log.Fatal(err)
 	}
 	app.nc = nc
-
 	return app
 }
