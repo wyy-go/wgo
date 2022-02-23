@@ -26,11 +26,11 @@ var ErrStreamInvalidMsgCount = errors.New("Stream reply received an incorrect nu
 //go:generate protoc -I. -I./third_party -I./third_party/gogoproto --gogo_out=Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:. nrpc.proto
 //go:generate mv nrpc/nrpc.pb.go nrpc/nrpcpb_test.go .
 
-type Handler interface {
+type H interface {
 	Subject() string
 	Handler(msg *nats.Msg)
 	SetNats(nc *nats.Conn)
-	SetContext(ctx context.Context)
+	SetMiddleware(ms []Middleware)
 }
 
 type NatsConn interface {
@@ -45,6 +45,8 @@ type NatsConn interface {
 
 // ReplyInboxMaker returns a new inbox subject for a given nats connection.
 type ReplyInboxMaker func(NatsConn) string
+
+type RequestHandler func(context.Context) (proto.Message, error)
 
 // GetReplyInbox is used by StreamCall to get a inbox subject
 // It can be changed by a client lib that needs custom inbox subjects
@@ -264,13 +266,14 @@ const (
 )
 
 // NewRequest creates a Request instance
-func NewRequest(ctx context.Context, conn NatsConn, subject string, replySubject string) *Request {
+func NewRequest(ctx context.Context, conn NatsConn, subject string, replySubject string, ms []Middleware) *Request {
 	return &Request{
 		Context:      ctx,
 		Conn:         conn,
 		Subject:      subject,
 		ReplySubject: replySubject,
 		CreatedAt:    time.Now(),
+		Ms:           ms,
 	}
 }
 
@@ -309,6 +312,7 @@ type Request struct {
 	AfterReply func(r *Request, success bool, replySuccess bool)
 
 	Handler func(context.Context) (proto.Message, error)
+	Ms      []Middleware
 }
 
 // Elapsed duration since request was started
@@ -327,7 +331,9 @@ func (r *Request) Run() (msg proto.Message, replyError *Error) {
 	ctx = context.WithValue(ctx, RequestContextKey, r)
 	msg, replyError = CaptureErrors(
 		func() (proto.Message, error) {
-			return r.Handler(ctx)
+			chain := Chain(r.Ms...)
+			next := chain(r.Handler)
+			return next(ctx)
 		})
 	return
 }
@@ -731,7 +737,7 @@ func (k *KeepStreamAlive) loop() {
 // WorkerPool is a pool of workers
 type WorkerPool struct {
 	Context       context.Context
-	ContextCancel context.CancelFunc
+	contextCancel context.CancelFunc
 
 	queue     chan *Request
 	schedule  chan *Request
@@ -749,8 +755,11 @@ func NewWorkerPool(
 	maxPending uint,
 	maxPendingDuration time.Duration,
 ) *WorkerPool {
-
+	ctx := context.TODO()
+	nCtx, cancel := context.WithCancel(ctx)
 	pool := WorkerPool{
+		Context:            nCtx,
+		contextCancel:      cancel,
 		queue:              make(chan *Request, maxPending),
 		schedule:           make(chan *Request),
 		maxPending:         maxPending,
@@ -891,7 +900,7 @@ func (pool *WorkerPool) Close(timeout time.Duration) {
 	}
 
 	// Now wait for the workers to stop and cancel the context if they don't
-	timer := time.AfterFunc(timeout, pool.ContextCancel)
+	timer := time.AfterFunc(timeout, pool.contextCancel)
 	pool.waitGroup.Wait()
 	timer.Stop()
 	close(pool.schedule)

@@ -107,7 +107,6 @@ func TestAll(t *testing.T) {
 	t.Run("MultiProtocolPublish", func(t *testing.T) {
 		log.SetOutput(TestingLogWriter{t})
 		handler := NewSvcCustomSubjectHandler(BasicServerImpl{t, nil, nil})
-		handler.SetContext(context.Background())
 		handler.SetNats(c)
 		handler.SetEncodings([]string{"protobuf", "json"})
 
@@ -146,10 +145,8 @@ func TestAll(t *testing.T) {
 		log.SetOutput(TestingLogWriter{t})
 		handler1 := NewSvcCustomSubjectHandler(BasicServerImpl{t, nil, nil})
 		handler1.SetNats(c)
-		handler1.SetContext(context.Background())
 		impl := BasicServerImpl{t, handler1, nil}
 		handler2 := NewSvcSubjectParamsHandler(&impl)
-		handler2.SetContext(context.Background())
 		handler2.SetNats(c)
 		impl.handler2 = handler2
 
@@ -171,7 +168,6 @@ func TestAll(t *testing.T) {
 
 		handler1 := NewSvcCustomSubjectConcurrentHandler(pool, BasicServerImpl{t, nil, nil})
 		handler1.SetNats(c)
-		handler1.SetContext(context.Background())
 		impl := BasicServerImpl{t, handler1, nil}
 		handler2 := NewSvcSubjectParamsConcurrentHandler(pool, &impl)
 		handler2.SetNats(c)

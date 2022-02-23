@@ -31,11 +31,12 @@ type GreeterHandler struct {
 	server  GreeterServer
 
 	encodings []string
+	ms        []nrpc.Middleware
 }
 
-func NewGreeterHandler(ctx context.Context, s GreeterServer) *GreeterHandler {
+func NewGreeterHandler(s GreeterServer) *GreeterHandler {
 	return &GreeterHandler{
-		ctx:    ctx,
+		ctx:    context.Background(),
 		nc:     nil,
 		server: s,
 
@@ -60,6 +61,10 @@ func (h *GreeterHandler) SetNats(nc *nats.Conn) {
 	h.nc = nc
 }
 
+func (h *GreeterHandler) SetMiddleware(ms []nrpc.Middleware) {
+	h.ms = ms
+}
+
 func (h *GreeterHandler) Subject() string {
 	return "nooption.Greeter.>"
 }
@@ -71,7 +76,7 @@ func (h *GreeterHandler) Handler(msg *nats.Msg) {
 	} else {
 		ctx = h.ctx
 	}
-	request := nrpc.NewRequest(ctx, h.nc, msg.Subject, msg.Reply)
+	request := nrpc.NewRequest(ctx, h.nc, msg.Subject, msg.Reply, h.ms)
 	// extract method name & encoding from subject
 	_, _, name, tail, err := nrpc.ParseSubject(
 		"nooption", 0, "Greeter", 0, msg.Subject)

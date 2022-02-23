@@ -2,20 +2,20 @@ package m1
 
 import (
 	"context"
-	"errors"
-	"github.com/nats-io/nats.go"
-	"github.com/wyy-go/wgo/middleware"
+	"github.com/gogo/protobuf/proto"
+	"github.com/wyy-go/wgo/nrpc"
+
 	"log"
 )
 
-func M1() middleware.Middleware {
-	return func(handler middleware.Handler) middleware.Handler {
-
-		return func(ctx context.Context, msg *nats.Msg) (rsp interface{}, err error) {
+func M1() nrpc.Middleware {
+	return func(handler nrpc.Handler) nrpc.Handler {
+		return func(ctx context.Context) (rsp proto.Message, err error) {
 			log.Println("==========m1 start=========")
-			err = errors.New("===============")
-			return
-			rsp, err = handler(ctx, msg)
+			rsp, err = handler(ctx)
+			if err != nil {
+				return nil, err
+			}
 			log.Println("==========m1 start=========")
 			return
 		}

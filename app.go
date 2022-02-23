@@ -3,7 +3,6 @@ package wgo
 import (
 	"fmt"
 	"github.com/nats-io/nats.go"
-	"github.com/wyy-go/wgo/middleware"
 	"github.com/wyy-go/wgo/nrpc"
 	"log"
 	"os"
@@ -28,17 +27,18 @@ func (a *App) GetNats() *nats.Conn {
 	return a.nc
 }
 
-func (a *App) RegisterHandler(h nrpc.Handler) error {
+func (a *App) RegisterHandler(h nrpc.H) error {
 	h.SetNats(a.nc)
-	sub, err := a.nc.Subscribe(h.Subject(), middleware.Wrap(h, a.opts.middleware...))
+	h.SetMiddleware(a.opts.middleware)
+	sub, err := a.nc.Subscribe(h.Subject(), h.Handler)
 	a.sub = sub
 	return err
 }
 
 // RegisterHandlerForLB for a load-balanced set of servers
-func (a *App) RegisterHandlerForLB(h nrpc.Handler, queue string) error {
+func (a *App) RegisterHandlerForLB(h nrpc.H, queue string) error {
 	h.SetNats(a.nc)
-	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, middleware.Wrap(h, a.opts.middleware...))
+	sub, err := a.nc.QueueSubscribe(h.Subject(), queue, h.Handler)
 	a.sub = sub
 	return err
 }

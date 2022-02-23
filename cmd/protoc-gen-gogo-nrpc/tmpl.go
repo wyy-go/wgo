@@ -150,11 +150,12 @@ type {{.GetName}}Handler struct {
 	server  {{.GetName}}Server
 
 	encodings []string
+	ms        []nrpc.Middleware
 }
 
 func New{{.GetName}}Handler(s {{.GetName}}Server) *{{.GetName}}Handler {
 	return &{{.GetName}}Handler{
-		ctx:    nil,
+		ctx:    context.Background(),
 		nc:     nil,
 		server: s,
 
@@ -179,14 +180,8 @@ func (h *{{.GetName}}Handler) SetNats(nc *nats.Conn) {
 	h.nc = nc
 }
 
-func (h *{{.GetName}}Handler) SetContext(ctx context.Context) {
-	if h.workers == nil {
-		h.ctx = ctx
-	} else {
-		nCtx, cancel := context.WithCancel(ctx)
-		h.workers.Context = nCtx
-		h.workers.ContextCancel = cancel
-	}
+func (h *{{.GetName}}Handler) SetMiddleware(ms []nrpc.Middleware) {
+	h.ms = ms
 }
 
 func (h *{{.GetName}}Handler) Subject() string {
@@ -244,7 +239,7 @@ func (h *{{.GetName}}Handler) Handler(msg *nats.Msg) {
 	} else {
 		ctx = h.ctx
 	}
-	request := nrpc.NewRequest(ctx, h.nc, msg.Subject, msg.Reply)
+	request := nrpc.NewRequest(ctx, h.nc, msg.Subject, msg.Reply, h.ms)
 	// extract method name & encoding from subject
 	{{ if ne 0 (len $pkgSubjectParams)}}pkgParams{{else}}_{{end -}},
 	{{- if ne 0 (len (GetServiceSubjectParams .))}} svcParams{{else}} _{{end -}}

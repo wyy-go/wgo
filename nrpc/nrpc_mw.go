@@ -1,12 +1,12 @@
-package middleware
+package nrpc
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
+	"github.com/gogo/protobuf/proto"
 )
 
 // Handler defines the handler invoked by Middleware.
-type Handler func(ctx context.Context, msg *nats.Msg) (interface{}, error)
+type Handler func(ctx context.Context) (proto.Message, error)
 
 // Middleware is HTTP/gRPC transport middleware.
 type Middleware func(Handler) Handler
