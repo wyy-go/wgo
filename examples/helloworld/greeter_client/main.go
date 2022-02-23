@@ -1,8 +1,10 @@
 package main
 
 import (
+	"github.com/nats-io/nats.go"
 	"github.com/wyy-go/wgo"
 	"log"
+	"time"
 
 	// This is the package containing the generated *.pb.go and *.nrpc.go
 	// files.
@@ -11,7 +13,7 @@ import (
 
 func main() {
 
-	nc := wgo.NewNats()
+	nc := wgo.NewNats(wgo.NatsUrl(nats.DefaultURL), wgo.NatsTimeOut(5*time.Second))
 	defer nc.Close()
 
 	// This is our generated client.

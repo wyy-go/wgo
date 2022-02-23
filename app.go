@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/natefinch/lumberjack"
 	"github.com/nats-io/nats.go"
+	"github.com/wyy-go/wgo/middleware/tracing"
 	"github.com/wyy-go/wgo/nrpc"
 	"github.com/wyy-go/wgo/pkg/config"
 	"github.com/wyy-go/wgo/pkg/config/file"
@@ -14,6 +15,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var cfgFile string
@@ -27,6 +36,26 @@ type App struct {
 
 	nc  *nats.Conn
 	sub *nats.Subscription
+}
+
+type Config struct {
+	Service struct {
+		Name      string `json:"name"`
+		Version   string `json:"version"`
+		DeployEnv string `json:"deploy_env"`
+		Verbose   bool   `json:"verbose"`
+	} `json:"service"`
+	Logger struct {
+		Level      string `json:"level"`
+		Filename   string `json:"filename"`
+		MaxSize    int    `json:"max_size"`
+		MaxBackups int    `json:"max_backups"`
+		MaxAge     int    `json:"max_age"`
+		Compress   bool   `json:"compress"`
+	} `json:"logger"`
+	Jaeger struct {
+		Endpoint string `json:"endpoint"`
+	} `json:"jaeger"`
 }
 
 func shutdown() []os.Signal {
@@ -64,12 +93,14 @@ func (a *App) Run() error {
 
 	logger.Infof("Name: %s Version: %s", a.opts.Name, a.opts.Version)
 	logger.Info("server is running, ^C quits.")
-	logger.Info("received signal %s", <-ch)
+	logger.Infof("received signal %s", <-ch)
 	if a.nc != nil {
 		a.nc.Close()
 	}
 	if a.sub != nil {
-		a.sub.Unsubscribe()
+		if err := a.sub.Unsubscribe(); err != nil {
+			logger.Error(err)
+		}
 	}
 
 	close(ch)
@@ -139,5 +170,35 @@ func New(opts ...Option) *App {
 		logger.Fatal(err)
 	}
 	app.nc = nc
+
+	if app.opts.Trace {
+		app.opts.Middleware = append(app.opts.Middleware, tracing.Trace(app.opts.Name))
+	}
+
+	// tracer
+	if app.opts.Trace && conf.Jaeger.Endpoint != "" {
+		SetTracerProvider(conf.Jaeger.Endpoint, app.opts.Name, app.opts.DeployEnv)
+	}
+
 	return app
+}
+
+func SetTracerProvider(url string, name string, deployEnv string) error {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	if err != nil {
+		return err
+	}
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(name),
+			attribute.String("environment", deployEnv),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return nil
 }

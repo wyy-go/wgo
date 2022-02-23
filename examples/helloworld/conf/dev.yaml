@@ -10,6 +10,8 @@ logger:
   max_backups: 10
   max_age: 7
   compress: true
+jaeger:
+  endpoint: http://172.16.13.33:14268/api/traces
 mysql:
   data_source: "root:123456@tcp(127.0.0.1:3306)/wgo?parseTime=true&loc=Local"
   max_idle: 10

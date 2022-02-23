@@ -29,7 +29,7 @@ func (s *server) SayHello(ctx context.Context, req *helloworld.HelloRequest) (re
 }
 
 func main() {
-	app := wgo.New(wgo.Middleware(m1.M1(), m2.M2()))
+	app := wgo.New(wgo.Middleware(m1.M1(), m2.M2()), wgo.Trace(false))
 
 	// deploy env
 	deployEnv := config.Get("service.deploy_env").String("")
@@ -41,7 +41,7 @@ func main() {
 	appconfig.Load()
 	//	logger.Debug(appconfig.GetMysql())
 	//	logger.Debug(appconfig.GetRedis())
-	
+
 	// Our server implementation.
 	s := &server{}
 
