@@ -8,11 +8,11 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-	github.com/nats-io/nats-server/v2 v2.7.2
-	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/nats-io/nats-server/v2 v2.9.14
+	github.com/nats-io/nats.go v1.23.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/jaeger v1.4.1
 	go.opentelemetry.io/otel/sdk v1.4.1
