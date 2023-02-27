@@ -12,7 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
 	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/jaeger v1.4.1
 	go.opentelemetry.io/otel/sdk v1.4.1
